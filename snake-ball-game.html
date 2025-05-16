@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake and Ball Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5549c2;
+            --secondary: #00cec9;
+            --danger: #ff7675;
+            --success: #55efc4;
+            --dark: #2d3436;
+            --light: #f9f9f9;
+            --grey: #b2bec3;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: var(--light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .game-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--light);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 500px;
+            margin: 1rem auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        #score {
+            font-size: 1.5rem;
+            margin: 0.5rem 0 1rem;
+            color: var(--light);
+            font-weight: 600;
+            display: inline-block;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 1.5rem;
+            border-radius: 30px;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            background-color: var(--secondary);
+            color: var(--dark);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            background-color: #01dfda;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stop-btn {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .stop-btn:hover {
+            background-color: #ff6b6b;
+        }
+        
+        .snake-part {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: var(--success);
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(85, 239, 196, 0.5);
+            transition: background-color 0.2s;
+        }
+        
+        .snake-head {
+            background-color: #1dd1a1;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(85, 239, 196, 0.7);
+        }
+        
+        .ball {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: var(--danger);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 118, 117, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 15px rgba(255, 118, 117, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 20px rgba(255, 118, 117, 0.9);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 15px rgba(255, 118, 117, 0.7);
+            }
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(45, 52, 54, 0.85);
+            backdrop-filter: blur(5px);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 100;
+            border-radius: 12px;
+        }
+        
+        #game-over.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        #final-score {
+            font-size: 1.5rem;
+            margin: 1rem 0;
+            color: var(--secondary);
+        }
+        
+        #restart-btn {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        #restart-btn:hover {
+            background-color: #ff6b6b;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 60px 120px 60px;
+            grid-template-rows: 60px 60px 60px;
+            grid-template-areas:
+                ". up ."
+                "left center right"
+                ". down .";
+            gap: 5px;
+            margin-top: 1.5rem;
+        }
+        
+        .control-btn {
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .control-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+        }
+        
+        .control-btn:active {
+            background-color: rgba(255, 255, 255, 0.35);
+            transform: scale(0.95);
+        }
+        
+        #up-btn { grid-area: up; }
+        #left-btn { grid-area: left; }
+        #right-btn { grid-area: right; }
+        #down-btn { grid-area: down; }
+        
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem auto;
+            max-width: 500px;
+            width: 100%;
+            text-align: left;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .instructions h3 {
+            color: var(--secondary);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .instructions p {
+            color: var(--light);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .instructions ul {
+            list-style-position: inside;
+            padding-left: 0.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .keyboard-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .key {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin: 0 0.25rem;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                grid-template-columns: 50px 100px 50px;
+                grid-template-rows: 50px 50px 50px;
+            }
+            
+            .control-btn {
+                font-size: 1rem;
+                border-radius: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="game-title">Snake & Ball</h1>
+    
+    <div class="container">
+        <div id="score">Score: 0</div>
+        <button id="start-btn" class="btn">Start Game</button>
+        <div id="game-container">
+            <div id="game-over">
+                Game Over!
+                <div id="final-score">Score: 0</div>
+                <button id="restart-btn" class="btn">Play Again</button>
+            </div>
+        </div>
+        
+        <div class="keyboard-hint">
+            Use <span class="key">←</span> <span class="key">→</span> <span class="key">↑</span> <span class="key">↓</span> arrow keys to play
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn" id="up-btn">↑</button>
+            <button class="control-btn" id="left-btn">←</button>
+            <button class="control-btn" id="right-btn">→</button>
+            <button class="control-btn" id="down-btn">↓</button>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h3>How to Play</h3>
+        <p>Navigate the snake using arrow keys or the on-screen buttons.</p>
+        <ul>
+            <li>Collect the red balls to grow your snake and earn points</li>
+            <li>The snake moves faster as your score increases</li>
+            <li>Game ends if you hit the walls or your own snake</li>
+            <li>Try to achieve the highest score possible!</li>
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Game constants
+            const GAME_WIDTH = 500;
+            const GAME_HEIGHT = 500;
+            const SNAKE_SIZE = 20;
+            const BALL_SIZE = 15;
+            const INITIAL_SNAKE_LENGTH = 3;
+            const INITIAL_SPEED = 120; // ms
+            const MIN_SPEED = 60; // Fastest speed the game will reach
+            const SPEED_DECREASE_FACTOR = 2; // How much faster the game gets per ball
+
+            // Game variables
+            let gameContainer = document.getElementById('game-container');
+            let scoreElement = document.getElementById('score');
+            let finalScoreElement = document.getElementById('final-score');
+            let gameOverElement = document.getElementById('game-over');
+            let startButton = document.getElementById('start-btn');
+            let restartButton = document.getElementById('restart-btn');
+            
+            // Control buttons
+            let upButton = document.getElementById('up-btn');
+            let downButton = document.getElementById('down-btn');
+            let leftButton = document.getElementById('left-btn');
+            let rightButton = document.getElementById('right-btn');
+            
+            let snake = [];
+            let direction = 'right';
+            let nextDirection = 'right';
+            let gameLoop;
+            let ball = null;
+            let score = 0;
+            let gameStarted = false;
+            let gameSpeed = INITIAL_SPEED;
+
+            // Initialize the game
+            function initGame() {
+                clearGameElements();
+                
+                // Create initial snake
+                snake = [];
+                for (let i = 0; i < INITIAL_SNAKE_LENGTH; i++) {
+                    let snakePart = document.createElement('div');
+                    snakePart.className = i === 0 ? 'snake-part snake-head' : 'snake-part';
+                    snakePart.style.left = (100 - i * SNAKE_SIZE) + 'px';
+                    snakePart.style.top = '100px';
+                    gameContainer.appendChild(snakePart);
+                    
+                    snake.push({
+                        element: snakePart,
+                        x: 100 - i * SNAKE_SIZE,
+                        y: 100
+                    });
+                }
+                
+                // Reset game variables
+                direction = 'right';
+                nextDirection = 'right';
+                score = 0;
+                gameSpeed = INITIAL_SPEED;
+                updateScore();
+                
+                // Create first ball
+                createBall();
+                
+                // Start game loop
+                gameLoop = setInterval(updateGame, gameSpeed);
+                gameStarted = true;
+                
+                // Update button text to "STOP GAME"
+                startButton.textContent = "STOP GAME";
+                startButton.classList.add('stop-btn');
+                
+                // Focus on the game container for keyboard controls
+                gameContainer.focus();
+            }
+            
+            // Stop the game
+            function stopGame() {
+                clearInterval(gameLoop);
+                gameStarted = false;
+                
+                // Reset button text to "Start Game"
+                startButton.textContent = "Start Game";
+                startButton.classList.remove('stop-btn');
+            }
+            
+            // Clear all game elements
+            function clearGameElements() {
+                // Remove all snake parts and ball
+                gameContainer.querySelectorAll('.snake-part, .ball').forEach(element => {
+                    element.remove();
+                });
+            }
+            
+            // Create a new ball at a random position
+            function createBall() {
+                // Remove existing ball if any
+                if (ball && ball.element) {
+                    ball.element.remove();
+                }
+                
+                // Create new ball element
+                let ballElement = document.createElement('div');
+                ballElement.className = 'ball';
+                
+                // Calculate random position (adjusted to grid)
+                let maxX = Math.floor((GAME_WIDTH - BALL_SIZE) / SNAKE_SIZE);
+                let maxY = Math.floor((GAME_HEIGHT - BALL_SIZE) / SNAKE_SIZE);
+                
+                let x = Math.floor(Math.random() * maxX) * SNAKE_SIZE;
+                let y = Math.floor(Math.random() * maxY) * SNAKE_SIZE;
+                
+                // Ensure ball doesn't spawn on snake
+                let isOnSnake = true;
+                while (isOnSnake) {
+                    isOnSnake = false;
+                    for (let part of snake) {
+                        if (Math.abs(part.x - x) < SNAKE_SIZE && Math.abs(part.y - y) < SNAKE_SIZE) {
+                            isOnSnake = true;
+                            x = Math.floor(Math.random() * maxX) * SNAKE_SIZE;
+                            y = Math.floor(Math.random() * maxY) * SNAKE_SIZE;
+                            break;
+                        }
+                    }
+                }
+                
+                ballElement.style.left = x + 'px';
+                ballElement.style.top = y + 'px';
+                
+                gameContainer.appendChild(ballElement);
+                
+                ball = {
+                    element: ballElement,
+                    x: x,
+                    y: y
+                };
+            }
+            
+            // Update game state
+            function updateGame() {
+                // Update direction
+                direction = nextDirection;
+                
+                // Calculate new head position
+                let headX = snake[0].x;
+                let headY = snake[0].y;
+                
+                switch (direction) {
+                    case 'up': headY -= SNAKE_SIZE; break;
+                    case 'down': headY += SNAKE_SIZE; break;
+                    case 'left': headX -= SNAKE_SIZE; break;
+                    case 'right': headX += SNAKE_SIZE; break;
+                }
+                
+                // Check collision with walls
+                if (headX < 0 || headX >= GAME_WIDTH || headY < 0 || headY >= GAME_HEIGHT) {
+                    gameOver();
+                    return;
+                }
+                
+                // Check collision with self
+                for (let i = 1; i < snake.length; i++) {
+                    if (headX === snake[i].x && headY === snake[i].y) {
+                        gameOver();
+                        return;
+                    }
+                }
+                
+                // Check if snake eats the ball
+                let eatsBall = ball && Math.abs(headX - ball.x) < SNAKE_SIZE && Math.abs(headY - ball.y) < SNAKE_SIZE;
+                
+                // Create new head
+                let newHead = document.createElement('div');
+                newHead.className = 'snake-part snake-head';
+                newHead.style.left = headX + 'px';
+                newHead.style.top = headY + 'px';
+                gameContainer.appendChild(newHead);
+                
+                // Update first element to be a regular snake part
+                if (snake.length > 0) {
+                    snake[0].element.classList.remove('snake-head');
+                }
+                
+                // Add new head to snake array
+                snake.unshift({
+                    element: newHead,
+                    x: headX,
+                    y: headY
+                });
+                
+                // If not eating ball, remove tail
+                if (!eatsBall) {
+                    let tail = snake.pop();
+                    tail.element.remove();
+                } else {
+                    // Snake eats ball
+                    score++;
+                    updateScore();
+                    createBall();
+                    
+                    // Increase game speed
+                    if (gameSpeed > MIN_SPEED) {
+                        gameSpeed = Math.max(MIN_SPEED, gameSpeed - SPEED_DECREASE_FACTOR);
+                        clearInterval(gameLoop);
+                        gameLoop = setInterval(updateGame, gameSpeed);
+                    }
+                }
+            }
+            
+            // Update score display
+            function updateScore() {
+                scoreElement.textContent = `Score: ${score}`;
+            }
+            
+            // Game over
+            function gameOver() {
+                clearInterval(gameLoop);
+                gameStarted = false;
+                finalScoreElement.textContent = `Score: ${score}`;
+                gameOverElement.classList.add('visible');
+                
+                // Reset button text
+                startButton.textContent = "Start Game";
+                startButton.classList.remove('stop-btn');
+            }
+            
+            // Event listeners
+            startButton.addEventListener('click', () => {
+                if (!gameStarted) {
+                    gameOverElement.classList.remove('visible');
+                    initGame();
+                    
+                    // Set focus to document for keyboard input
+                    document.body.focus();
+                } else {
+                    // Stop the game if it's already running
+                    stopGame();
+                }
+            });
+            
+            restartButton.addEventListener('click', () => {
+                gameOverElement.classList.remove('visible');
+                initGame();
+                
+                // Set focus to document for keyboard input
+                document.body.focus();
+            });
+            
+            // Make sure keyboard controls work even when a button is focused
+            document.body.setAttribute('tabindex', '0');
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (!gameStarted) return;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        if (direction !== 'down') nextDirection = 'up';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                    case 'ArrowDown':
+                        if (direction !== 'up') nextDirection = 'down';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                    case 'ArrowLeft':
+                        if (direction !== 'right') nextDirection = 'left';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                    case 'ArrowRight':
+                        if (direction !== 'left') nextDirection = 'right';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                    case ' ': // Space bar to pause/resume
+                        if (gameStarted) {
+                            stopGame();
+                        } else {
+                            initGame();
+                        }
+                        e.preventDefault();
+                        break;
+                }
+            });
+            
+            // Button controls
+            upButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'down') nextDirection = 'up';
+            });
+            
+            downButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'up') nextDirection = 'down';
+            });
+            
+            leftButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'right') nextDirection = 'left';
+            });
+            
+            rightButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'left') nextDirection = 'right';
+            });
+        });
+    </script>
+                
+                // Ensure ball doesn't spawn on snake
+                let isOnSnake = true;
+                while (isOnSnake) {
+                    isOnSnake = false;
+                    for (let part of snake) {
+                        if (Math.abs(part.x - x) < SNAKE_SIZE && Math.abs(part.y - y) < SNAKE_SIZE) {
+                            isOnSnake = true;
+                            x = Math.floor(Math.random() * maxX) * SNAKE_SIZE;
+                            y = Math.floor(Math.random() * maxY) * SNAKE_SIZE;
+                            break;
+                        }
+                    }
+                }
+                
+                ballElement.style.left = x + 'px';
+                ballElement.style.top = y + 'px';
+                
+                gameContainer.appendChild(ballElement);
+                
+                ball = {
+                    element: ballElement,
+                    x: x,
+                    y: y
+                };
+            }
+            
+            // Update game state
+            function updateGame() {
+                // Update direction
+                direction = nextDirection;
+                
+                // Calculate new head position
+                let headX = snake[0].x;
+                let headY = snake[0].y;
+                
+                switch (direction) {
+                    case 'up': headY -= SNAKE_SIZE; break;
+                    case 'down': headY += SNAKE_SIZE; break;
+                    case 'left': headX -= SNAKE_SIZE; break;
+                    case 'right': headX += SNAKE_SIZE; break;
+                }
+                
+                // Check collision with walls
+                if (headX < 0 || headX >= GAME_WIDTH || headY < 0 || headY >= GAME_HEIGHT) {
+                    gameOver();
+                    return;
+                }
+                
+                // Check collision with self
+                for (let i = 1; i < snake.length; i++) {
+                    if (headX === snake[i].x && headY === snake[i].y) {
+                        gameOver();
+                        return;
+                    }
+                }
+                
+                // Check if snake eats the ball
+                let eatsBall = ball && Math.abs(headX - ball.x) < SNAKE_SIZE && Math.abs(headY - ball.y) < SNAKE_SIZE;
+                
+                // Create new head
+                let newHead = document.createElement('div');
+                newHead.className = 'snake-part snake-head';
+                newHead.style.left = headX + 'px';
+                newHead.style.top = headY + 'px';
+                gameContainer.appendChild(newHead);
+                
+                // Update first element to be a regular snake part
+                if (snake.length > 0) {
+                    snake[0].element.classList.remove('snake-head');
+                }
+                
+                // Add new head to snake array
+                snake.unshift({
+                    element: newHead,
+                    x: headX,
+                    y: headY
+                });
+                
+                // If not eating ball, remove tail
+                if (!eatsBall) {
+                    let tail = snake.pop();
+                    tail.element.remove();
+                } else {
+                    // Snake eats ball
+                    score++;
+                    updateScore();
+                    createBall();
+                    
+                    // Increase game speed
+                    if (gameSpeed > MIN_SPEED) {
+                        gameSpeed = Math.max(MIN_SPEED, gameSpeed - SPEED_DECREASE_FACTOR);
+                        clearInterval(gameLoop);
+                        gameLoop = setInterval(updateGame, gameSpeed);
+                    }
+                }
+            }
+            
+            // Update score display
+            function updateScore() {
+                scoreElement.textContent = `Score: ${score}`;
+            }
+            
+            // Game over
+            function gameOver() {
+                clearInterval(gameLoop);
+                gameStarted = false;
+                finalScoreElement.textContent = `Score: ${score}`;
+                gameOverElement.classList.add('visible');
+            }
+            
+            // Event listeners
+            startButton.addEventListener('click', () => {
+                if (!gameStarted) {
+                    gameOverElement.classList.remove('visible');
+                    initGame();
+                    
+                    // Set focus to document for keyboard input
+                    document.body.focus();
+                }
+            });
+            
+            restartButton.addEventListener('click', () => {
+                gameOverElement.classList.remove('visible');
+                initGame();
+                
+                // Set focus to document for keyboard input
+                document.body.focus();
+            });
+            
+            // Make sure keyboard controls work even when a button is focused
+            document.body.setAttribute('tabindex', '0');
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (!gameStarted) return;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        if (direction !== 'down') nextDirection = 'up';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                    case 'ArrowDown':
+                        if (direction !== 'up') nextDirection = 'down';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                    case 'ArrowLeft':
+                        if (direction !== 'right') nextDirection = 'left';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                    case 'ArrowRight':
+                        if (direction !== 'left') nextDirection = 'right';
+                        e.preventDefault(); // Prevent page scrolling
+                        break;
+                }
+            });
+            
+            // Button controls
+            upButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'down') nextDirection = 'up';
+            });
+            
+            downButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'up') nextDirection = 'down';
+            });
+            
+            leftButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'right') nextDirection = 'left';
+            });
+            
+            rightButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'left') nextDirection = 'right';
+            });
+        });
+    </script>
+</body>
+</html>y = Math.floor(Math.random() * maxY) * SNAKE_SIZE;
+                            break;
+                        }
+                    }
+                }
+                
+                ballElement.style.left = x + 'px';
+                ballElement.style.top = y + 'px';
+                
+                gameContainer.appendChild(ballElement);
+                
+                ball = {
+                    element: ballElement,
+                    x: x,
+                    y: y
+                };
+            }
+            
+            // Update game state
+            function updateGame() {
+                // Update direction
+                direction = nextDirection;
+                
+                // Calculate new head position
+                let headX = snake[0].x;
+                let headY = snake[0].y;
+                
+                switch (direction) {
+                    case 'up': headY -= SNAKE_SIZE; break;
+                    case 'down': headY += SNAKE_SIZE; break;
+                    case 'left': headX -= SNAKE_SIZE; break;
+                    case 'right': headX += SNAKE_SIZE; break;
+                }
+                
+                // Check collision with walls
+                if (headX < 0 || headX >= GAME_WIDTH || headY < 0 || headY >= GAME_HEIGHT) {
+                    gameOver();
+                    return;
+                }
+                
+                // Check collision with self
+                for (let i = 1; i < snake.length; i++) {
+                    if (headX === snake[i].x && headY === snake[i].y) {
+                        gameOver();
+                        return;
+                    }
+                }
+                
+                // Check if snake eats the ball
+                let eatsBall = ball && Math.abs(headX - ball.x) < SNAKE_SIZE && Math.abs(headY - ball.y) < SNAKE_SIZE;
+                
+                // Create new head
+                let newHead = document.createElement('div');
+                newHead.className = 'snake-part snake-head';
+                newHead.style.left = headX + 'px';
+                newHead.style.top = headY + 'px';
+                gameContainer.appendChild(newHead);
+                
+                // Update first element to be a regular snake part
+                if (snake.length > 0) {
+                    snake[0].element.classList.remove('snake-head');
+                }
+                
+                // Add new head to snake array
+                snake.unshift({
+                    element: newHead,
+                    x: headX,
+                    y: headY
+                });
+                
+                // If not eating ball, remove tail
+                if (!eatsBall) {
+                    let tail = snake.pop();
+                    tail.element.remove();
+                } else {
+                    // Snake eats ball
+                    score++;
+                    updateScore();
+                    createBall();
+                    
+                    // Increase game speed
+                    if (gameSpeed > MIN_SPEED) {
+                        gameSpeed = Math.max(MIN_SPEED, gameSpeed - SPEED_DECREASE_FACTOR);
+                        clearInterval(gameLoop);
+                        gameLoop = setInterval(updateGame, gameSpeed);
+                    }
+                }
+            }
+            
+            // Update score display
+            function updateScore() {
+                scoreElement.textContent = `Score: ${score}`;
+            }
+            
+            // Game over
+            function gameOver() {
+                clearInterval(gameLoop);
+                gameStarted = false;
+                finalScoreElement.textContent = `Score: ${score}`;
+                gameOverElement.style.visibility = 'visible';
+            }
+            
+            // Event listeners
+            startButton.addEventListener('click', () => {
+                if (!gameStarted) {
+                    gameOverElement.style.visibility = 'hidden';
+                    initGame();
+                }
+            });
+            
+            restartButton.addEventListener('click', () => {
+                gameOverElement.style.visibility = 'hidden';
+                initGame();
+            });
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (!gameStarted) return;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        if (direction !== 'down') nextDirection = 'up';
+                        break;
+                    case 'ArrowDown':
+                        if (direction !== 'up') nextDirection = 'down';
+                        break;
+                    case 'ArrowLeft':
+                        if (direction !== 'right') nextDirection = 'left';
+                        break;
+                    case 'ArrowRight':
+                        if (direction !== 'left') nextDirection = 'right';
+                        break;
+                }
+            });
+            
+            // Button controls
+            upButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'down') nextDirection = 'up';
+            });
+            
+            downButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'up') nextDirection = 'down';
+            });
+            
+            leftButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'right') nextDirection = 'left';
+            });
+            
+            rightButton.addEventListener('click', () => {
+                if (gameStarted && direction !== 'left') nextDirection = 'right';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -353,9 +353,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Game constants
-            const GAME_WIDTH = 500;
-            const GAME_HEIGHT = 500;
+            // Game variables
             const SNAKE_SIZE = 20;
             const BALL_SIZE = 15;
             const INITIAL_SNAKE_LENGTH = 3;
@@ -363,7 +361,7 @@
             const MIN_SPEED = 60; // Fastest speed the game will reach
             const SPEED_DECREASE_FACTOR = 2; // How much faster the game gets per ball
 
-            // Game variables
+            // Game elements
             let gameContainer = document.getElementById('game-container');
             let scoreElement = document.getElementById('score');
             let finalScoreElement = document.getElementById('final-score');
@@ -377,6 +375,10 @@
             let leftButton = document.getElementById('left-btn');
             let rightButton = document.getElementById('right-btn');
             
+            // Dynamic game dimensions
+            let GAME_WIDTH, GAME_HEIGHT;
+            
+            // Game state
             let snake = [];
             let direction = 'right';
             let nextDirection = 'right';
@@ -385,24 +387,48 @@
             let score = 0;
             let gameStarted = false;
             let gameSpeed = INITIAL_SPEED;
+            let gridSize;
+
+            // Initialize game dimensions
+            function updateGameDimensions() {
+                // Get actual game container dimensions
+                let rect = gameContainer.getBoundingClientRect();
+                GAME_WIDTH = rect.width;
+                GAME_HEIGHT = rect.height;
+                
+                // Calculate grid size based on game dimensions
+                gridSize = Math.floor(Math.min(GAME_WIDTH, GAME_HEIGHT) / 25); // 25 cells across
+                
+                console.log(`Game dimensions: ${GAME_WIDTH}x${GAME_HEIGHT}, Grid size: ${gridSize}`);
+            }
 
             // Initialize the game
             function initGame() {
                 clearGameElements();
+                updateGameDimensions();
                 
-                // Create initial snake
+                // Create initial snake in a safe starting position
                 snake = [];
+                let startX = Math.floor(GAME_WIDTH / 4);
+                let startY = Math.floor(GAME_HEIGHT / 4);
+                
+                // Adjust to grid
+                startX = Math.floor(startX / gridSize) * gridSize;
+                startY = Math.floor(startY / gridSize) * gridSize;
+                
                 for (let i = 0; i < INITIAL_SNAKE_LENGTH; i++) {
                     let snakePart = document.createElement('div');
                     snakePart.className = i === 0 ? 'snake-part snake-head' : 'snake-part';
-                    snakePart.style.left = (100 - i * SNAKE_SIZE) + 'px';
-                    snakePart.style.top = '100px';
+                    snakePart.style.width = `${gridSize}px`;
+                    snakePart.style.height = `${gridSize}px`;
+                    snakePart.style.left = (startX - i * gridSize) + 'px';
+                    snakePart.style.top = startY + 'px';
                     gameContainer.appendChild(snakePart);
                     
                     snake.push({
                         element: snakePart,
-                        x: 100 - i * SNAKE_SIZE,
-                        y: 100
+                        x: startX - i * gridSize,
+                        y: startY
                     });
                 }
                 
@@ -423,9 +449,6 @@
                 // Update button text to "STOP GAME"
                 startButton.textContent = "STOP GAME";
                 startButton.classList.add('stop-btn');
-                
-                // Focus on the game container for keyboard controls
-                gameContainer.focus();
             }
             
             // Stop the game
@@ -456,28 +479,55 @@
                 // Create new ball element
                 let ballElement = document.createElement('div');
                 ballElement.className = 'ball';
+                ballElement.style.width = `${BALL_SIZE}px`;
+                ballElement.style.height = `${BALL_SIZE}px`;
                 
-                // Calculate random position (adjusted to grid)
-                let maxX = Math.floor((GAME_WIDTH - BALL_SIZE) / SNAKE_SIZE);
-                let maxY = Math.floor((GAME_HEIGHT - BALL_SIZE) / SNAKE_SIZE);
+                // Calculate grid-aligned random position
+                let maxX = Math.floor((GAME_WIDTH - BALL_SIZE) / gridSize);
+                let maxY = Math.floor((GAME_HEIGHT - BALL_SIZE) / gridSize);
                 
-                let x = Math.floor(Math.random() * maxX) * SNAKE_SIZE;
-                let y = Math.floor(Math.random() * maxY) * SNAKE_SIZE;
+                // Ensure we have valid dimensions to prevent infinite loops
+                if (maxX <= 0) maxX = 1;
+                if (maxY <= 0) maxY = 1;
+                
+                let x = Math.floor(Math.random() * maxX) * gridSize;
+                let y = Math.floor(Math.random() * maxY) * gridSize;
+                
+                // Add safety margin
+                x = Math.min(x, GAME_WIDTH - BALL_SIZE - gridSize);
+                y = Math.min(y, GAME_HEIGHT - BALL_SIZE - gridSize);
                 
                 // Ensure ball doesn't spawn on snake
                 let isOnSnake = true;
-                while (isOnSnake) {
+                let attempts = 0;
+                const MAX_ATTEMPTS = 50;
+                
+                while (isOnSnake && attempts < MAX_ATTEMPTS) {
                     isOnSnake = false;
+                    attempts++;
+                    
                     for (let part of snake) {
-                        if (Math.abs(part.x - x) < SNAKE_SIZE && Math.abs(part.y - y) < SNAKE_SIZE) {
+                        if (Math.abs(part.x - x) < gridSize && Math.abs(part.y - y) < gridSize) {
                             isOnSnake = true;
-                            x = Math.floor(Math.random() * maxX) * SNAKE_SIZE;
-                            y = Math.floor(Math.random() * maxY) * SNAKE_SIZE;
+                            x = Math.floor(Math.random() * maxX) * gridSize;
+                            y = Math.floor(Math.random() * maxY) * gridSize;
+                            
+                            // Add safety margin
+                            x = Math.min(x, GAME_WIDTH - BALL_SIZE - gridSize);
+                            y = Math.min(y, GAME_HEIGHT - BALL_SIZE - gridSize);
                             break;
                         }
                     }
                 }
                 
+                // If we couldn't find a free spot, place it in a default position
+                if (attempts >= MAX_ATTEMPTS) {
+                    console.log("Failed to find free spot for ball, using default position");
+                    x = GAME_WIDTH - 3 * gridSize;
+                    y = GAME_HEIGHT - 3 * gridSize;
+                }
+                
+                // Position the ball
                 ballElement.style.left = x + 'px';
                 ballElement.style.top = y + 'px';
                 
@@ -488,6 +538,8 @@
                     x: x,
                     y: y
                 };
+                
+                console.log(`Ball created at ${x},${y}`);
             }
             
             // Update game state
@@ -500,14 +552,16 @@
                 let headY = snake[0].y;
                 
                 switch (direction) {
-                    case 'up': headY -= SNAKE_SIZE; break;
-                    case 'down': headY += SNAKE_SIZE; break;
-                    case 'left': headX -= SNAKE_SIZE; break;
-                    case 'right': headX += SNAKE_SIZE; break;
+                    case 'up': headY -= gridSize; break;
+                    case 'down': headY += gridSize; break;
+                    case 'left': headX -= gridSize; break;
+                    case 'right': headX += gridSize; break;
                 }
                 
-                // Check collision with walls
-                if (headX < 0 || headX >= GAME_WIDTH || headY < 0 || headY >= GAME_HEIGHT) {
+                // Check collision with walls - add proper boundary detection
+                if (headX < 0 || headX + gridSize > GAME_WIDTH || 
+                    headY < 0 || headY + gridSize > GAME_HEIGHT) {
+                    console.log(`Wall collision at ${headX},${headY}`);
                     gameOver();
                     return;
                 }
@@ -515,17 +569,34 @@
                 // Check collision with self
                 for (let i = 1; i < snake.length; i++) {
                     if (headX === snake[i].x && headY === snake[i].y) {
+                        console.log(`Self collision at ${headX},${headY}`);
                         gameOver();
                         return;
                     }
                 }
                 
                 // Check if snake eats the ball
-                let eatsBall = ball && Math.abs(headX - ball.x) < SNAKE_SIZE && Math.abs(headY - ball.y) < SNAKE_SIZE;
+                let eatsBall = false;
+                if (ball) {
+                    const ballCenterX = ball.x + BALL_SIZE / 2;
+                    const ballCenterY = ball.y + BALL_SIZE / 2;
+                    const headCenterX = headX + gridSize / 2;
+                    const headCenterY = headY + gridSize / 2;
+                    
+                    // Use distance between centers for more accurate collision
+                    const distance = Math.sqrt(
+                        Math.pow(ballCenterX - headCenterX, 2) + 
+                        Math.pow(ballCenterY - headCenterY, 2)
+                    );
+                    
+                    eatsBall = distance < (gridSize / 2 + BALL_SIZE / 2);
+                }
                 
                 // Create new head
                 let newHead = document.createElement('div');
                 newHead.className = 'snake-part snake-head';
+                newHead.style.width = `${gridSize}px`;
+                newHead.style.height = `${gridSize}px`;
                 newHead.style.left = headX + 'px';
                 newHead.style.top = headY + 'px';
                 gameContainer.appendChild(newHead);
@@ -578,14 +649,24 @@
                 startButton.classList.remove('stop-btn');
             }
             
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (gameStarted) {
+                    // If game is running, we need to restart with new dimensions
+                    stopGame();
+                    // Add a small delay to ensure dimensions are updated
+                    setTimeout(initGame, 100);
+                } else {
+                    // Just update dimensions for next game
+                    updateGameDimensions();
+                }
+            });
+            
             // Event listeners
             startButton.addEventListener('click', () => {
                 if (!gameStarted) {
                     gameOverElement.classList.remove('visible');
                     initGame();
-                    
-                    // Set focus to document for keyboard input
-                    document.body.focus();
                 } else {
                     // Stop the game if it's already running
                     stopGame();
@@ -595,12 +676,9 @@
             restartButton.addEventListener('click', () => {
                 gameOverElement.classList.remove('visible');
                 initGame();
-                
-                // Set focus to document for keyboard input
-                document.body.focus();
             });
             
-            // Make sure keyboard controls work even when a button is focused
+            // Make sure keyboard controls work
             document.body.setAttribute('tabindex', '0');
             
             // Keyboard controls
@@ -635,7 +713,28 @@
                 }
             });
             
-            // Button controls
+            // Touch/button controls - using touchstart for better mobile response
+            upButton.addEventListener('touchstart', (e) => {
+                if (gameStarted && direction !== 'down') nextDirection = 'up';
+                e.preventDefault();
+            });
+            
+            downButton.addEventListener('touchstart', (e) => {
+                if (gameStarted && direction !== 'up') nextDirection = 'down';
+                e.preventDefault();
+            });
+            
+            leftButton.addEventListener('touchstart', (e) => {
+                if (gameStarted && direction !== 'right') nextDirection = 'left';
+                e.preventDefault();
+            });
+            
+            rightButton.addEventListener('touchstart', (e) => {
+                if (gameStarted && direction !== 'left') nextDirection = 'right';
+                e.preventDefault();
+            });
+            
+            // Also keep click for non-touch devices
             upButton.addEventListener('click', () => {
                 if (gameStarted && direction !== 'down') nextDirection = 'up';
             });
@@ -651,6 +750,9 @@
             rightButton.addEventListener('click', () => {
                 if (gameStarted && direction !== 'left') nextDirection = 'right';
             });
+            
+            // Initialize dimensions on load
+            updateGameDimensions();
         });
     </script>
 </body>
